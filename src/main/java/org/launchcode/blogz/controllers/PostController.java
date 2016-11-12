@@ -25,13 +25,39 @@ public class PostController extends AbstractController {
 		
 		// TODO - implement newPost
 		
-		return "redirect:index"; // TODO - this redirect should go to the new post's page  		
+		// get parameters
+		String title = request.getParameter("title");
+		String body = request.getParameter("body");
+		
+		String error = "";
+		// validate parameters
+		if (title != "" && body != "") {
+			Post post = new Post(title, body, getUserFromSession(request.getSession()));
+			postDao.save(post);
+			return "redirect:/blog/" + post.getAuthor().getUsername() + "/" + post.getUid();  // TODO - this redirect should go to the new post's page
+		}
+		else {
+			error = "Post title and body are required.";
+		}
+		model.addAttribute("value", title);
+		model.addAttribute("body", body);
+		model.addAttribute("error", error);
+		
+		return "newpost";  		
 	}
 	
 	@RequestMapping(value = "/blog/{username}/{uid}", method = RequestMethod.GET)
 	public String singlePost(@PathVariable String username, @PathVariable int uid, Model model) {
 		
 		// TODO - implement singlePost
+		
+		// get given post
+		Post post = postDao.findByUid(uid);
+		
+		// pass post into template
+		model.addAttribute("post", post);
+		//model.addAttribute("title", post.getTitle());
+		//model.addAttribute("body", post.getBody());
 		
 		return "post";
 	}
@@ -40,6 +66,13 @@ public class PostController extends AbstractController {
 	public String userPosts(@PathVariable String username, Model model) {
 		
 		// TODO - implement userPosts
+		
+		// get posts by user
+		User user = userDao.findByUsername(username);
+		List<Post> posts = user.getPosts();
+		
+		// pass posts into template
+		model.addAttribute("posts", posts);
 		
 		return "blog";
 	}
