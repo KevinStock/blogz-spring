@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class AuthenticationController extends AbstractController {
 	
-	@Autowired
-	private UserDao userDao;
-	
 	@RequestMapping(value = "/signup", method = RequestMethod.GET)
 	public String signupForm() {
 		return "signup";
@@ -25,24 +22,30 @@ public class AuthenticationController extends AbstractController {
 	public String signup(HttpServletRequest request, Model model) {
 		
 		// TODO - implement signup
+		// parameters
 		String username = request.getParameter("username");
 		String password = request.getParameter("password");
 		String verify = request.getParameter("verify");
 		
-		User user = new User(username, password);
+		User user;
 		
-		if (user.isValidUsername(user.getUsername())) {
-			if (user.isValidPassword(password)) {
+		// verify parameters
+		if (User.isValidUsername(username)) {
+			if (User.isValidPassword(password)) {
 				if (password.equals(verify)) {
+					user = new User(username, password);
 					userDao.save(user);
-					request.getSession().setAttribute(AbstractController.userSessionKey, user.getUid());
+					// set session data
+					setUserInSession(request.getSession(), user);
 					return "redirect:blog/newpost";
 				}
 				model.addAttribute("verify_error", "Passwords do not match.");
 			}
 			model.addAttribute("password_error", "Password is invalid");
 		}
+		model.addAttribute("username", username);
 		model.addAttribute("username_error", "Username is invalid");
+
 		return "signup";
 	}
 	
@@ -55,15 +58,27 @@ public class AuthenticationController extends AbstractController {
 	public String login(HttpServletRequest request, Model model) {
 		
 		// TODO - implement login
+		// parameters
 		String username = request.getParameter("username");
 		String password = request.getParameter("password");
 		
+		// get user by username
 		User user = userDao.findByUsername(username);
+		
+		if (user == null) {
+			model.addAttribute("username", username);
+			model.addAttribute("error", "No user with that username found.");
+			return "login";
+		}
+		
+		// validate password
 		if (user.isMatchingPassword(password)) {
-			request.getSession().setAttribute(AbstractController.userSessionKey, user.getUid());
+			// set user in session
+			setUserInSession(request.getSession(), user);
 			return "redirect:blog/newpost";
 		}
-		model.addAttribute("error", "Error logging in");
+		model.addAttribute("username", username);
+		model.addAttribute("error", "Incorrect Password");
 		return "login";
 	}
 	
