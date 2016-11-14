@@ -31,21 +31,33 @@ public class AuthenticationController extends AbstractController {
 		
 		// verify parameters
 		if (User.isValidUsername(username)) {
-			if (User.isValidPassword(password)) {
-				if (password.equals(verify)) {
-					user = new User(username, password);
-					userDao.save(user);
-					// set session data
-					setUserInSession(request.getSession(), user);
-					return "redirect:blog/newpost";
-				}
-				model.addAttribute("verify_error", "Passwords do not match.");
+			if (userDao.findByUsername(username) != null) {
+				model.addAttribute("username", username);
+				model.addAttribute("username_error", "User already exists");
+				return "signup";
 			}
+		}
+		else {
+			model.addAttribute("username", username);
+			model.addAttribute("username_error", "Username is invalid");
+			return "signup";
+		}
+		
+		if (User.isValidPassword(password)) {
+			if (password.equals(verify)) {
+				user = new User(username, password);
+				userDao.save(user);
+				// set session data
+				setUserInSession(request.getSession(), user);
+				return "redirect:blog/newpost";
+			}
+			model.addAttribute("verify_error", "Passwords do not match.");
+		}
+		else {
 			model.addAttribute("password_error", "Password is invalid");
 		}
 		model.addAttribute("username", username);
-		model.addAttribute("username_error", "Username is invalid");
-
+		
 		return "signup";
 	}
 	
